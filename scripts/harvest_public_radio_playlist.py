@@ -115,7 +115,7 @@ def date_range(start_date, end_date, interval):
 def get_episode(widget, program_id, playlist_id, episode_date):
     url = f"https://api.composer.nprstations.org/v1/widget/{widget}/playlist?t={playlist_id}&prog_id={program_id}&datestamp={episode_date}"
     r = requests.get(url)
-    logging.info(f"Episode track URL: {url}")
+    logging.debug(f"Episode track URL: {url}")
     r.raise_for_status()
     data = r.json()
     try:
