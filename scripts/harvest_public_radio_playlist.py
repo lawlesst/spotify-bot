@@ -164,7 +164,7 @@ def main():
         )
         find_updates_from = None
         if spotify_playlist_details is None:
-            _id = api.create_playlist(spotify_user, program_name)
+            _id = api.create_user_playlist(spotify_user, program_name)
             spotify_playlist_details = api.get_user_playlist_by_name(
                 spotify_user, program_name
             )
