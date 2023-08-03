@@ -133,7 +133,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Get a playlist from nprstations.org and upload to spotify."
     )
-    parser.add_argument("program", choices=playlist_choices)
+    parser.add_argument("program", choices=playlist_choices, nargs="+")
     parser.add_argument(
         "--dry-run",
         required=False,
@@ -142,15 +142,15 @@ def main():
     )
 
     args = parser.parse_args()
-    program_slug = args.program
+    program_slugs = args.program
     spotify_user = config["SPOTIFY_USER_ID"]
 
     DATE_CUTOFF = date(2023, 8, 1)
 
-    if program_slug == "all":
+    if "all" in program_slugs:
         to_harvest = [v for v in PROGRAMS.values()]
     else:
-        to_harvest = [PROGRAMS[program_slug]]
+        to_harvest = [PROGRAMS[p] for p in program_slugs]
 
     logging.info(f"Will harvest {len(to_harvest)} programs.")
 
@@ -188,7 +188,7 @@ def main():
         if (episodes_from_date > date.today()) or (
             last_date_to_check >= episodes_from_date
         ):
-            print("Episodes are up-to-date. Exiting.")
+            print(f"{program_name} episodes are up-to-date. Exiting.")
             continue
 
         # Program specific tracks to skip
