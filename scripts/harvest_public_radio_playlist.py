@@ -189,7 +189,7 @@ def main():
             last_date_to_check >= episodes_from_date
         ):
             print("Episodes are up-to-date. Exiting.")
-            return
+            continue
 
         # Program specific tracks to skip
         program_skips = program.get("skip_tracks_artists")
