@@ -93,7 +93,7 @@ WNCW Cosmic American Music Show: https://www.wncw.org/show/cosmic-american-music
 }
 
 LAST_UPDATE_RE = re.compile(
-    "(?:Last episode|Date)\:? ([0-9]{4})-([0-9]{2})-([0-9]{2})\."
+    "(?:Last episode|Date)\:?\s([0-9]{4})-([0-9]{2})-([0-9]{2})"
 )
 
 
@@ -185,7 +185,9 @@ def main():
             find_updates_from or program.get("start_date") or DATE_CUTOFF
         )
 
-        if episodes_from_date > date.today():
+        if (episodes_from_date > date.today()) or (
+            last_date_to_check >= episodes_from_date
+        ):
             print("Episodes are up-to-date. Exiting.")
             return
 
