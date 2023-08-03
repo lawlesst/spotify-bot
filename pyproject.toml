@@ -9,10 +9,11 @@ packages = [{include = "wemu_roots_music_project_playlists"}]
 [tool.poetry.dependencies]
 python = "^3.11"
 python-dotenv = "^1.0.0"
+requests = "^2.31.0"
 
 
 [tool.poetry.group.dev.dependencies]
-ipython = "^8.13.2"
+ipython = "^8.14.0"
 ipdb = "^0.13.13"
 pre-commit = "^3.3.3"
 

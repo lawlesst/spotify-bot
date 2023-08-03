@@ -87,10 +87,14 @@ WNCW Cosmic American Music Show: https://www.wncw.org/show/cosmic-american-music
         "program_id": "5e066050d638004d6fe76dee",
         "playlist_id": "1685106861340",
         "name": "WFPK: Mel's Diner",
-        "description": "--name--: https://www.lpm.org/music. Date: --updated--",
-        # "start_date": date(2023, 5, 25),
+        "description": "--name--: https://www.lpm.org/music. Last episode: --updated--",
+        "start_date": date(2023, 7, 31),
     },
 }
+
+LAST_UPDATE_RE = re.compile(
+    "(?:Last episode|Date)\:? ([0-9]{4})-([0-9]{2})-([0-9]{2})\."
+)
 
 
 def clean_search_term(term):
@@ -111,6 +115,7 @@ def date_range(start_date, end_date, interval):
 def get_episode(widget, program_id, playlist_id, episode_date):
     url = f"https://api.composer.nprstations.org/v1/widget/{widget}/playlist?t={playlist_id}&prog_id={program_id}&datestamp={episode_date}"
     r = requests.get(url)
+    logging.info(f"Episode track URL: {url}")
     r.raise_for_status()
     data = r.json()
     try:
@@ -121,9 +126,6 @@ def get_episode(widget, program_id, playlist_id, episode_date):
             file=sys.stderr,
         )
         return {}
-
-
-# Dead Air: https://api.composer.nprstations.org/v1/widget/5187f56de1c8c6a808e91b8d/playlist?t=1683914696382&prog_id=5187f5aee1c8c6a808e91ba4&datestamp=2023-05-11&order=1&errorMsg=No+results+found.+Please+modify+your+search+and+try+again.
 
 
 def main():
@@ -141,8 +143,9 @@ def main():
 
     args = parser.parse_args()
     program_slug = args.program
+    spotify_user = config["SPOTIFY_USER_ID"]
 
-    DATE_CUTOFF = date(2023, 3, 1)
+    DATE_CUTOFF = date(2023, 8, 1)
 
     if program_slug == "all":
         to_harvest = [v for v in PROGRAMS.values()]
@@ -154,16 +157,47 @@ def main():
     api = Spotify(auth_file=auth_file)
 
     for program in to_harvest:
+        program_name = program["name"]
+
+        spotify_playlist_details = api.get_user_playlist_by_name(
+            spotify_user, program["name"]
+        )
+        find_updates_from = None
+        if spotify_playlist_details is None:
+            _id = api.create_playlist(spotify_user, program_name)
+            spotify_playlist_details = api.get_user_playlist_by_name(
+                spotify_user, program_name
+            )
+        # Get the last episode from the description, if it exists.
+        find_updates_from = None
+        last_update_match = LAST_UPDATE_RE.search(
+            spotify_playlist_details["description"]
+        )
+        if last_update_match is not None:
+            year, month, day = last_update_match.groups()
+            if year is not None:
+                find_updates_from = date(
+                    int(year), int(month), int(day)
+                ) + timedelta(days=1)
+
+        episodes_from_date = date.today()
+        last_date_to_check = (
+            find_updates_from or program.get("start_date") or DATE_CUTOFF
+        )
+
+        if episodes_from_date > date.today():
+            print("Episodes are up-to-date. Exiting.")
+            return
+
+        # Program specific tracks to skip
         program_skips = program.get("skip_tracks_artists")
         if program_skips is not None:
             program_skips = re.compile(program_skips)
 
-        edate = program.get("start_date") or datetime.today().date()
-
         while True:
-            formatted_edate = edate.strftime("%Y-%m-%d")
+            formatted_edate = episodes_from_date.strftime("%Y-%m-%d")
             print(
-                f"Getting {program['name']} on {formatted_edate}",
+                f"Getting {program['name']} since {formatted_edate}",
                 file=sys.stderr,
             )
             n = 0
@@ -173,7 +207,6 @@ def main():
                 program["playlist_id"],
                 formatted_edate,
             )
-            playlist_name = f"{program['name']}"
             tracks = []
             for song in episode.get("playlist", []):
                 track = song.get("trackName")
@@ -204,7 +237,7 @@ def main():
                 else:
                     tracks.append(f"spotify:track:{track['id']}")
                     n += 1
-            # Update the playlist tracks.
+            # Update the description and playlist tracks.
             if len(tracks) > 0:
                 description = (
                     program.get("description", "")
@@ -213,34 +246,32 @@ def main():
                     .replace("--name--", program["name"])
                     .replace("\n", " ")
                 )
-                playlist_id, created = api.get_or_create_playlist(
-                    config["SPOTIFY_USER_ID"],
-                    playlist_name,
-                    description,
-                )
-                if (created is False) and (args.dry_run is False):
-                    # update the details
-                    _ = api.update_playlist_details(
-                        playlist_id,
-                        {
-                            "name": playlist_name,
-                            "description": description,
-                            "public": True,
-                        },
-                    )
                 if args.dry_run is True:
                     print(
-                        f"** Dry run: {edate} would add {len(tracks)} tracks."
+                        f"** Dry run: {episodes_from_date} would add {len(tracks)} tracks."
                     )
+                    print(f"Description:\n {description}")
                 else:
-                    logging.info(f"{edate} adding {len(tracks)} tracks.")
-                    _ = api.update_playlist_tracks(playlist_id, tracks)
-                    logging.info(f"Episode {edate}. {n} songs added.")
+                    logging.info(
+                        f"{episodes_from_date} adding {len(tracks)} tracks."
+                    )
+                    _ = api.update_playlist_details(
+                        spotify_playlist_details["id"],
+                        {"description": description},
+                    )
+                    _ = api.update_playlist_tracks(
+                        spotify_playlist_details["id"], tracks
+                    )
+                    logging.info(
+                        f"Episode {episodes_from_date}. {n} songs added."
+                    )
                 break
             else:
-                edate = edate - timedelta(days=1)
-                if edate < DATE_CUTOFF:
-                    logging.info(f"Reached {edate}. Breaking")
+                episodes_from_date = episodes_from_date - timedelta(days=1)
+                if episodes_from_date < last_date_to_check:
+                    logging.info(
+                        f"Reached {episodes_from_date}. Breaking. No new episodes."
+                    )
                     break
 
 

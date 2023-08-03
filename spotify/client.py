@@ -79,6 +79,37 @@ class Spotify(object):
         r.raise_for_status()
         return r.json()
 
+    def get_user_playlist_by_name(self, user, name):
+        url = f"{api_base_url}/users/{user}/playlists"
+
+        offset = 0
+        page_size = 50
+        # To do - iterate when user has more than 50 playlists
+        rsp = self.session.get(
+            url, params={"limit": page_size, "offset": offset}
+        )
+        rsp.raise_for_status()
+        data = rsp.json()
+        for plist in data["items"]:
+            if plist["name"] == name:
+                return plist
+
+    def create_user_playlist(self, user, name, public=True):
+        payload = {"name": name, "public": public}
+        url = f"{api_base_url}/users/{user}/playlists"
+        rsp = self.session.post(
+            url,
+            json=payload,
+        )
+        rsp.raise_for_status()
+        if rsp.status_code == 201:
+            data = rsp.json()
+            return data["id"]
+        else:
+            print(rsp.status_code)
+            print(rsp.headers)
+            raise Exception("Failed creation")
+
     def get_or_create_playlist(self, user, name, description):
         url = f"{api_base_url}/users/{user}/playlists"
 
