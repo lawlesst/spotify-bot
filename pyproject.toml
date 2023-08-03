@@ -1,10 +1,9 @@
 [tool.poetry]
-name = "wemu-roots-music-project-playlists"
+name = "spotify-playlists"
 version = "0.1.0"
 description = ""
-authors = ["Your Name <you@example.com>"]
+authors = ["Ted Lawless <lawlesst@gmail.com>"]
 readme = "README.md"
-packages = [{include = "wemu_roots_music_project_playlists"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
