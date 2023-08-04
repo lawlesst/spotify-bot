@@ -3,6 +3,7 @@ scratch
 .vscode
 data/*
 .spotify-auth.json
+**/*.log
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -3,7 +3,8 @@ import json
 import logging
 import re
 import sys
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 import requests
@@ -14,8 +15,25 @@ config = dotenv_values()
 cwd = Path(__file__).parent
 parent_cwd = cwd.parent
 sys.path.append(str(parent_cwd))
-
+# Add client to path.
 from spotify.client import Spotify
+
+file_handler = logging.handlers.RotatingFileHandler(
+    filename=cwd.joinpath("update-public-radio-playlists.log"),
+    mode="a",
+    maxBytes=5 * 1024 * 1024,
+    backupCount=0,
+    encoding=None,
+    delay=0,
+)
+stdout_handler = logging.StreamHandler(stream=sys.stdout)
+handlers = [file_handler, stdout_handler]
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(asctime)s] %(levelname)s - %(message)s",
+    handlers=handlers,
+)
 
 auth_file = parent_cwd.joinpath(".spotify-auth.json")
 if not auth_file.exists():
@@ -121,7 +139,7 @@ def get_episode(widget, program_id, playlist_id, episode_date):
     try:
         return data["playlist"][0]
     except IndexError:
-        print(
+        logging.info(
             f"No episode found for {program_id} on {episode_date}",
             file=sys.stderr,
         )
@@ -164,7 +182,7 @@ def main():
         )
         find_updates_from = None
         if spotify_playlist_details is None:
-            _id = api.create_user_playlist(spotify_user, program_name)
+            _ = api.create_user_playlist(spotify_user, program_name)
             spotify_playlist_details = api.get_user_playlist_by_name(
                 spotify_user, program_name
             )
@@ -181,14 +199,14 @@ def main():
                 ) + timedelta(days=1)
 
         episodes_from_date = date.today()
-        last_date_to_check = (
+        last_episode_date_to_check = (
             find_updates_from or program.get("start_date") or DATE_CUTOFF
         )
 
         if (episodes_from_date > date.today()) or (
-            last_date_to_check >= episodes_from_date
+            last_episode_date_to_check >= episodes_from_date
         ):
-            print(f"{program_name} episodes are up-to-date. Exiting.")
+            logging.info(f"{program_name} episodes are up-to-date.")
             continue
 
         # Program specific tracks to skip
@@ -198,10 +216,7 @@ def main():
 
         while True:
             formatted_edate = episodes_from_date.strftime("%Y-%m-%d")
-            print(
-                f"Getting {program['name']} since {formatted_edate}",
-                file=sys.stderr,
-            )
+            logging.info(f"Getting {program['name']} since {formatted_edate}")
             n = 0
             episode = get_episode(
                 program["widget"],
@@ -215,7 +230,9 @@ def main():
                 artist = song.get("artistName")
                 album = song.get("collectionName", "")
                 if (track is None) or (artist is None):
-                    print(f"** Skipping: {json.dumps(song)}", file=sys.stderr)
+                    logging.info(
+                        f"Skipping: {json.dumps(song)}", file=sys.stderr
+                    )
                     continue
                 if program_skips is not None:
                     track = song.get("trackName")
@@ -225,8 +242,8 @@ def main():
                     elif program_skips.search(artist) is not None:
                         skip = True
                     if skip is True:
-                        print(
-                            f"** Skipping: {json.dumps(song)}", file=sys.stderr
+                        logging.info(
+                            f"Skipping: {json.dumps(song)}", file=sys.stderr
                         )
                         continue
                 query = f"track: {clean_search_term(track)} album: {clean_search_term(album)} artist: {clean_search_term(artist)}"
@@ -270,13 +287,13 @@ def main():
                 break
             else:
                 episodes_from_date = episodes_from_date - timedelta(days=1)
-                if episodes_from_date < last_date_to_check:
+                if episodes_from_date < last_episode_date_to_check:
                     logging.info(
-                        f"Reached {episodes_from_date}. Breaking. No new episodes."
+                        f"Reached {episodes_from_date}. No new episodes found."
                     )
                     break
 
 
 if __name__ == "__main__":
-    logger = logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger()
     main()
