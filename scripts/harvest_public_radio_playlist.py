@@ -139,7 +139,7 @@ def get_episode(widget, program_id, playlist_id, episode_date):
     try:
         return data["playlist"][0]
     except IndexError:
-        logging.info(f"No episode found for {program_id} on {episode_date}")
+        logging.debug(f"No episode found for {program_id} on {episode_date}")
         return {}
 
 
@@ -203,17 +203,24 @@ def main():
         if (episodes_from_date > date.today()) or (
             last_episode_date_to_check >= episodes_from_date
         ):
-            logging.info(f"{program_name} episodes are up-to-date.")
+            logging.info(
+                f"{program_name} episodes are up-to-date, updated on {last_episode_date_to_check}."
+            )
             continue
+        else:
+            logging.info(
+                f"{program['name']}. Updating. Looking for episodes since {last_episode_date_to_check}."
+            )
 
-        # Program specific tracks to skip
+        # Program specific tracks to skip. Defined in config.
         program_skips = program.get("skip_tracks_artists")
         if program_skips is not None:
             program_skips = re.compile(program_skips)
 
+        # Page through feed to find latest episode and update playlist.
         while True:
             formatted_edate = episodes_from_date.strftime("%Y-%m-%d")
-            logging.info(f"Getting {program['name']} since {formatted_edate}")
+            logging.debug(f"Getting {program['name']} since {formatted_edate}")
             n = 0
             episode = get_episode(
                 program["widget"],
@@ -227,9 +234,7 @@ def main():
                 artist = song.get("artistName")
                 album = song.get("collectionName", "")
                 if (track is None) or (artist is None):
-                    logging.info(
-                        f"Skipping: {json.dumps(song)}", file=sys.stderr
-                    )
+                    logging.debug(f"Skipping: {json.dumps(song)}")
                     continue
                 if program_skips is not None:
                     track = song.get("trackName")
@@ -239,17 +244,15 @@ def main():
                     elif program_skips.search(artist) is not None:
                         skip = True
                     if skip is True:
-                        logging.info(
-                            f"Skipping: {json.dumps(song)}", file=sys.stderr
-                        )
+                        logging.debug(f"Skipping: {json.dumps(song)}")
                         continue
                 query = f"track: {clean_search_term(track)} album: {clean_search_term(album)} artist: {clean_search_term(artist)}"
                 rsp = api.search(query)
-                logging.info(f"Looking for {track} by {artist} on {album}.")
+                logging.debug(f"Looking for {track} by {artist} on {album}.")
                 # Use the first track found.
                 track = rsp["tracks"]["items"][0]
                 if (track is None) or (track.get("id") is None):
-                    logging.info(f"*** can't find track for {query}")
+                    logging.debug(f"*** can't find track for {query}")
                 else:
                     tracks.append(f"spotify:track:{track['id']}")
                     n += 1
@@ -268,7 +271,7 @@ def main():
                     )
                     print(f"Description:\n {description}")
                 else:
-                    logging.info(
+                    logging.debug(
                         f"{episodes_from_date} adding {len(tracks)} tracks."
                     )
                     _ = api.update_playlist_details(
@@ -279,14 +282,14 @@ def main():
                         spotify_playlist_details["id"], tracks
                     )
                     logging.info(
-                        f"Episode {episodes_from_date}. {n} songs added."
+                        f"{program_name} episode {episodes_from_date}. {n} songs added."
                     )
                 break
             else:
                 episodes_from_date = episodes_from_date - timedelta(days=1)
                 if episodes_from_date < last_episode_date_to_check:
                     logging.info(
-                        f"Reached {episodes_from_date}. No new episodes found."
+                        f"{program_name} reached {episodes_from_date}. No new episodes found."
                     )
                     break
 
