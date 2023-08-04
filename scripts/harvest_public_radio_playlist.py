@@ -19,7 +19,7 @@ sys.path.append(str(parent_cwd))
 from spotify.client import Spotify
 
 file_handler = logging.handlers.RotatingFileHandler(
-    filename=cwd.joinpath("update-public-radio-playlists.log"),
+    filename=cwd.joinpath("pr.log"),
     mode="a",
     maxBytes=5 * 1024 * 1024,
     backupCount=0,
@@ -139,10 +139,7 @@ def get_episode(widget, program_id, playlist_id, episode_date):
     try:
         return data["playlist"][0]
     except IndexError:
-        logging.info(
-            f"No episode found for {program_id} on {episode_date}",
-            file=sys.stderr,
-        )
+        logging.info(f"No episode found for {program_id} on {episode_date}")
         return {}
 
 
