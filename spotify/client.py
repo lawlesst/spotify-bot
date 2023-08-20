@@ -1,3 +1,7 @@
+"""
+Spotify API client.
+"""
+
 import base64
 import json
 import logging
@@ -29,7 +33,6 @@ class Spotify(object):
                 credentials = json.load(f)
             for k, v in credentials.items():
                 setattr(self, k, v)
-                # self.__dict__[k] = v
         else:
             self.client_id = client_id or config.get("CLIENT_ID")
             self.client_secret = client_secret or config.get("CLIENT_SECRET")
