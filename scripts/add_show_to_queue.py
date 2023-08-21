@@ -83,14 +83,17 @@ def main():
         # Make sure not in queue already or any other episodes
         # from same show
         user_queue = api.get_queue()
-        queued_tracks = [user_queue["currently_playing"]["uri"]] + [
-            t["uri"] for t in user_queue["queue"]
-        ]
+        queued_tracks = [t["uri"] for t in user_queue["queue"]]
+        if user_queue.get("currently_playing") is not None:
+            queued_tracks += user_queue["currently_playing"]["uri"]
         if show_uri in queued_tracks:
             print(f"{show_uri} already in queue. Skipping.")
         else:
-            print(f"Adding {show_uri} to queue.")
-            _ = api.add_to_queue(show_uri)
+            if args.dry_run is True:
+                print(f"Dry run. Not adding {show_uri} to queue.")
+            else:
+                print(f"Adding {show_uri} to queue.")
+                _ = api.add_to_queue(show_uri)
 
 
 if __name__ == "__main__":
