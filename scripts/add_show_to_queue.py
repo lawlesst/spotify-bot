@@ -58,6 +58,12 @@ def main():
     parser.add_argument("program", nargs="+", choices=program_choices)
     parser.add_argument("device_id")
     parser.add_argument(
+        "--force",
+        required=False,
+        help="Force. Will add to queue if user is not currently listening.",
+        action="store_true",
+    )
+    parser.add_argument(
         "--dry-run",
         required=False,
         help="Dry run. Will get latest episode from Spotify but not add to queue.",
@@ -70,6 +76,13 @@ def main():
     api = Spotify(auth_file=auth_file)
 
     for slug in program_slugs:
+
+        if args.force is True:
+            pass
+        else:
+            if api.get_state() is False:
+                print(f"Player is not active. Not adding to queue.")
+                return
 
         program_info = program_map.get(slug)
         if program_info is None:

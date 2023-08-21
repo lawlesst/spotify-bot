@@ -180,6 +180,15 @@ class Spotify(object):
         rsp.raise_for_status()
         return rsp.json()
 
+    def get_state(self):
+        url = f"{api_base_url}/me/player"
+        rsp = self.session.get(url)
+        rsp.raise_for_status()
+        if rsp.status_code == 204:
+            return False
+        else:
+            return rsp.json()
+
     # def get_recently_played(self, type="episode", limit=10):
     #     # Currently doesn't support podcasts
     #     url = f"{api_base_url}/me/player/recently-played"
