@@ -25,3 +25,8 @@ Optionally, add `http://lawlesst.github.io/tools/auth-redirect.html` as a redire
 To obtain credentials, run `python authorization.py code`. This will open a web browser where you can authenticate with Spotify, if not already, and then be redirected to a web page where you can copy the URL parameter CODE. 
 
 Then run `python authorization.py refresh-token --code <value from the code URL parameter above>`. This will obtain the necessary credentials and save them to a file called `.spotify-auth.json` in the current working directory. These can be passed the to included client library for authenticating with the API. 
+
+
+## Example usage
+
+In `scripts/harvest_public_radio_playist.py`, playlists from several public radio music programs are harvested and Spotify playlists created or updated from the program tracks. Each new episode overwrites the existing playlist.

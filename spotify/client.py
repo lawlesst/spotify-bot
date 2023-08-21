@@ -173,3 +173,32 @@ class Spotify(object):
         )
         rsp.raise_for_status()
         return rsp.json()
+
+    def get_show(self, show_id):
+        url = f"{api_base_url}/shows/{show_id}"
+        rsp = self.session.get(url)
+        rsp.raise_for_status()
+        return rsp.json()
+
+    # def get_recently_played(self, type="episode", limit=10):
+    #     # Currently doesn't support podcasts
+    #     url = f"{api_base_url}/me/player/recently-played"
+    #     rsp = self.session.get(url, params={"type": type, "limit": limit})
+    #     print(rsp.headers)
+    #     rsp.raise_for_status()
+    #     return rsp.json()
+
+    def get_queue(self):
+        url = f"{api_base_url}/me/player/queue"
+        rsp = self.session.get(url)
+        rsp.raise_for_status()
+        return rsp.json()
+
+    def add_to_queue(self, track_uri, device_id=None):
+        url = f"{api_base_url}/me/player/queue"
+        d = {"uri": track_uri}
+        if device_id is not None:
+            d["device_id"] = device_id
+        rsp = self.session.post(url, params=d)
+        rsp.raise_for_status()
+        return True

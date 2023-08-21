@@ -11,7 +11,7 @@ from dotenv import dotenv_values
 config = dotenv_values()
 
 redirect_uri = "https://lawlesst.github.io/tools/auth-redirect.html"
-scope = "playlist-modify-private playlist-modify-public playlist-read-private playlist-read-collaborative"
+scope = "playlist-modify-private playlist-modify-public playlist-read-private playlist-read-collaborative user-read-playback-state user-modify-playback-state user-read-recently-played"
 
 
 def get_code():
