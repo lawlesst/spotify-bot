@@ -3,15 +3,10 @@ Harvest public radio playlists.
 """
 
 import argparse
-import json
 import logging
-import re
 import sys
-import time
-from datetime import date, timedelta
 from pathlib import Path
 
-import requests
 from dotenv import dotenv_values
 
 config = dotenv_values()
@@ -22,14 +17,6 @@ sys.path.append(str(parent_cwd))
 # Add client to path.
 from spotify.client import Spotify
 
-# file_handler = logging.handlers.RotatingFileHandler(
-#     filename=cwd.joinpath("pr.log"),
-#     mode="a",
-#     maxBytes=5 * 1024 * 1024,
-#     backupCount=0,
-#     encoding=None,
-#     delay=0,
-# )
 stdout_handler = logging.StreamHandler(stream=sys.stdout)
 handlers = [stdout_handler]
 
