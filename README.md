@@ -4,8 +4,8 @@ A personal bot leveraging the [Spotify API](https://developer.spotify.com/docume
 
 Utilities:
 
-* [Harvest public radio episodes](./blob/main/scripts/harvest_public_radio_playlist.py) and create Spotify playlists. See this [blog post for an overview](https://lawlesst.github.io/notebook/spotify-playlists.html).
-* [Add the NPR hourly news update](./blob/main/scripts/add_show_to_queue.py) to your listening queue. This can be scheduled to run throughout the day.
+* [Harvest public radio episodes](./scripts/harvest_public_radio_playlist.py) and create Spotify playlists. See this [blog post for an overview](https://lawlesst.github.io/notebook/spotify-playlists.html).
+* [Add the NPR hourly news update](./scripts/add_show_to_queue.py) to your listening queue. This can be scheduled to run throughout the day.
 
 More details follow for anyone attempting to reuse this code.
 
