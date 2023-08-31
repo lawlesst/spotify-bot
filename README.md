@@ -1,6 +1,13 @@
-# Spotify playlist
+# Spotify bot
 
-Utility for creating Spotify playlists via the [Spotify API](https://developer.spotify.com/documentation/web-api).
+A personal bot leveraging the [Spotify API](https://developer.spotify.com/documentation/web-api) for creating Spotify playlists and managing a listening queue.
+
+Utilities:
+
+* [Harvest public radio episodes](./blob/main/scripts/harvest_public_radio_playlist.py) and create Spotify playlists. See this [blog post for an overview](https://lawlesst.github.io/notebook/spotify-playlists.html).
+* [Add the NPR hourly news update](./blob/main/scripts/add_show_to_queue.py) to your listening queue. This can be scheduled to run throughout the day.
+
+More details follow for anyone attempting to reuse this code.
 
 ## Install/setup
 
@@ -25,8 +32,3 @@ Optionally, add `http://lawlesst.github.io/tools/auth-redirect.html` as a redire
 To obtain credentials, run `python authorization.py code`. This will open a web browser where you can authenticate with Spotify, if not already, and then be redirected to a web page where you can copy the URL parameter CODE. 
 
 Then run `python authorization.py refresh-token --code <value from the code URL parameter above>`. This will obtain the necessary credentials and save them to a file called `.spotify-auth.json` in the current working directory. These can be passed the to included client library for authenticating with the API. 
-
-
-## Example usage
-
-In `scripts/harvest_public_radio_playist.py`, playlists from several public radio music programs are harvested and Spotify playlists created or updated from the program tracks. Each new episode overwrites the existing playlist.
