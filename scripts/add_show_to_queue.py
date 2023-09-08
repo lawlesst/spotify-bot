@@ -38,7 +38,11 @@ def main():
         "npr-news-now": {
             "name": "NPR News Now",
             "id": "6BRSvIBNQnB68GuoXJRCnQ",
-        }
+        },
+        "wsj-briefing": {
+            "name": "WSJ Minute Briefing",
+            "id": "44BcTpDWnfhcn02ADzs7iB",
+        },
     }
     program_choices = list(program_map.keys())
     parser = argparse.ArgumentParser(description="Add shows to queue.")
