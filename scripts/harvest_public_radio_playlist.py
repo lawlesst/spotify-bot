@@ -49,7 +49,6 @@ PROGRAMS = {
     "rmp": {
         "widget": "5187f12ae1c8fae1350fa49f",
         "program_id": "5187f133e1c8fae1350fa4c7",
-        "playlist_id": "1683574235827",
         "name": "WEMU Roots Music Project",
         "interval": "weekly",
         "description": """
@@ -59,7 +58,6 @@ WEMU - The Roots Music Project with Jeremy Baldwin: https://www.wemu.org/show/th
     "dead": {
         "widget": "5187f56de1c8c6a808e91b8d",
         "program_id": "5187f5aee1c8c6a808e91ba4",
-        "playlist_id": "1683914696382",
         "name": "WNCW Dead Air",
         "interval": "daily",
         "description": """
@@ -69,7 +67,6 @@ WNCW Dead Air: https://www.wncw.org/show/dead-air. Last episode --updated--. Don
     "country-gold": {
         "widget": "5187f56de1c8c6a808e91b8d",
         "program_id": "5245f100ea9e43597100048e",
-        "playlist_id": "1683916095604",
         "name": "WNCW Country Gold",
         "interval": "weekly",
         "description": """
@@ -79,7 +76,6 @@ WNCW Country Gold: https://www.wncw.org/show/country-gold. Last episode --update
     "cosmic": {
         "widget": "5187f56de1c8c6a808e91b8d",
         "program_id": "5187f5afe1c8c6a808e91bb4",
-        "playlist_id": "1683916456546",
         "name": "WNCW Cosmic American Music Show",
         "interval": "weekly",
         "description": """
@@ -89,7 +85,6 @@ WNCW Cosmic American Music Show: https://www.wncw.org/show/cosmic-american-music
     "thelist": {
         "widget": "57c9be5be1c82c3e03c0777b",
         "program_id": "5ddeb21ac3f8702af1379877",
-        "playlist_id": "1684505725296",
         "name": "WMOT The List, The Americana Chart Show",
         "skip_tracks_artists": "^LIST|^List",
         "description": """
@@ -99,7 +94,6 @@ WNCW Cosmic American Music Show: https://www.wncw.org/show/cosmic-american-music
     "highplains": {
         "widget": "51827282e1c82a388d82b12d",
         "program_id": "5182729ce1c82a388d82b1af",
-        "playlist_id": "1684868853517",
         "name": "HPPR: High Plains Morning",
         "description": "--name--: https://www.hppr.org/show/high-plains-morning. Last episode: --updated--.",
         "skip_tracks_artists": "^In-Studio Performance",
@@ -107,7 +101,6 @@ WNCW Cosmic American Music Show: https://www.wncw.org/show/cosmic-american-music
     "mel": {
         "widget": "51929bfde1c8886d5ccfb1d9",
         "program_id": "5e066050d638004d6fe76dee",
-        "playlist_id": "1685106861340",
         "name": "WFPK: Mel's Diner",
         "description": "--name--: https://www.lpm.org/music. Last episode: --updated--",
         "start_date": date(2023, 7, 31),
@@ -144,8 +137,8 @@ def date_range(start_date, end_date, interval):
         yield start_date + timedelta(n)
 
 
-def get_episode(widget, program_id, playlist_id, episode_date):
-    url = f"https://api.composer.nprstations.org/v1/widget/{widget}/playlist?t={playlist_id}&prog_id={program_id}&datestamp={episode_date}"
+def get_episode(widget, program_id, episode_date):
+    url = f"https://api.composer.nprstations.org/v1/widget/{widget}/playlist?prog_id={program_id}&datestamp={episode_date}"
     r = requests.get(url)
     logging.debug(f"Episode track URL: {url}")
     r.raise_for_status()
@@ -239,7 +232,6 @@ def main():
             episode = get_episode(
                 program["widget"],
                 program["program_id"],
-                program["playlist_id"],
                 formatted_edate,
             )
             tracks = []
@@ -264,7 +256,11 @@ def main():
                 rsp = api.search(query)
                 logging.debug(f"Looking for {track} by {artist} on {album}.")
                 # Use the first track found.
-                track = rsp["tracks"]["items"][0]
+                try:
+                    track = rsp["tracks"]["items"][0]
+                except IndexError:
+                    logging.debug(f"*** can't find track for {query}")
+                    continue
                 if (track is None) or (track.get("id") is None):
                     logging.debug(f"*** can't find track for {query}")
                 else:
