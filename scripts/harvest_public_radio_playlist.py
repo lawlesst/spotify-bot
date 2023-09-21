@@ -108,11 +108,20 @@ WNCW Cosmic American Music Show: https://www.wncw.org/show/cosmic-american-music
     "roland": {
         "widget": "5187f56de1c8c6a808e91b8d",
         "program_id": "60ec6586de940e741d46eef1",
-        "playlist_id": "1695305143044",
         "name": "WNCW's Music Mix with Roland Dierauf",
         "interval": "daily",
         "description": """
 WNCW's Music Mix with Roland Dierauf. Last episode --updated--. Donate to WNCW at https://support.wncw.org/thankyougifts
+""",
+    },
+    # 5187f5b1e1c8c6a808e91bc9
+    "martin": {
+        "widget": "5187f56de1c8c6a808e91b8d",
+        "program_id": "5187f5b1e1c8c6a808e91bc9",
+        "name": "WNCW's Music Mix with Martin Anderson",
+        "interval": "daily",
+        "description": """
+WNCW's Music Mix with Martin Anderson. Last episode --updated--. Donate to WNCW at https://support.wncw.org/thankyougifts
 """,
     },
 }
