@@ -112,6 +112,16 @@ WNCW Cosmic American Music Show: https://www.wncw.org/show/cosmic-american-music
         "description": "--name--: https://www.lpm.org/music. Last episode: --updated--",
         "start_date": date(2023, 7, 31),
     },
+    "roland": {
+        "widget": "5187f56de1c8c6a808e91b8d",
+        "program_id": "60ec6586de940e741d46eef1",
+        "playlist_id": "1695305143044",
+        "name": "WNCW's Music Mix with Roland Dierauf",
+        "interval": "daily",
+        "description": """
+WNCW's Music Mix with Roland Dierauf. Last episode --updated--. Donate to WNCW at https://support.wncw.org/thankyougifts
+""",
+    },
 }
 
 LAST_UPDATE_RE = re.compile(
