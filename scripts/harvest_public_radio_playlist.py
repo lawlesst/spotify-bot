@@ -55,6 +55,15 @@ PROGRAMS = {
 WEMU - The Roots Music Project with Jeremy Baldwin: https://www.wemu.org/show/the-roots-music-project-with-jeremy-baldwin. Last episode --updated--. Donate to WEMU: https://donate.nprstations.org/wemu/
             """,
     },
+    "memphis": {
+        "widget": "5187f12ae1c8fae1350fa49f",
+        "program_id": "5187f130e1c8fae1350fa4a7",
+        "name": "WEMU Memphis to Motown",
+        "interval": "weekly",
+        "description": """
+WEMU - From Memphis to Motown with Wendy Wright: https://www.wemu.org/show/from-memphis-to-motown. Last episode --updated--. Donate to WEMU: https://donate.nprstations.org/wemu/
+            """,
+    },
     "dead": {
         "widget": "5187f56de1c8c6a808e91b8d",
         "program_id": "5187f5aee1c8c6a808e91ba4",
@@ -171,6 +180,12 @@ def main():
         help="Dry run. Will harvest playlist but not upload to Spotify.",
         action="store_true",
     )
+    parser.add_argument(
+        "--force",
+        required=False,
+        help="Will harvest latest episode even if date matches Spotify date..",
+        action="store_true",
+    )
 
     args = parser.parse_args()
     program_slugs = args.program
@@ -200,16 +215,19 @@ def main():
                 spotify_user, program_name
             )
         # Get the last episode from the description, if it exists.
-        find_updates_from = None
-        last_update_match = LAST_UPDATE_RE.search(
-            spotify_playlist_details["description"]
-        )
-        if last_update_match is not None:
-            year, month, day = last_update_match.groups()
-            if year is not None:
-                find_updates_from = date(
-                    int(year), int(month), int(day)
-                ) + timedelta(days=1)
+        if args.force is True:
+            find_updates_from = DATE_CUTOFF
+        else:
+            find_updates_from = None
+            last_update_match = LAST_UPDATE_RE.search(
+                spotify_playlist_details["description"]
+            )
+            if last_update_match is not None:
+                year, month, day = last_update_match.groups()
+                if year is not None:
+                    find_updates_from = date(
+                        int(year), int(month), int(day)
+                    ) + timedelta(days=1)
 
         episodes_from_date = date.today()
         last_episode_date_to_check = (
@@ -290,9 +308,7 @@ def main():
                     )
                     print(f"Description:\n {description}")
                 else:
-                    logging.debug(
-                        f"{episodes_from_date} adding {len(tracks)} tracks."
-                    )
+                    logging.debug(f"{episodes_from_date} adding {len(tracks)} tracks.")
                     _ = api.update_playlist_details(
                         spotify_playlist_details["id"],
                         {"description": description},
