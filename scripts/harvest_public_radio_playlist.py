@@ -280,7 +280,12 @@ def main():
                         logging.debug(f"Skipping: {json.dumps(song)}")
                         continue
                 query = f"track: {clean_search_term(track)} album: {clean_search_term(album)} artist: {clean_search_term(artist)}"
-                rsp = api.search(query)
+                try:
+                    rsp = api.search(query)
+                except requests.exceptions.HTTPError as e:
+                    logging.error(f"Spotify search error: {e}")
+                    logging.error(f"Query: {query}")
+                    continue
                 logging.debug(f"Looking for {track} by {artist} on {album}.")
                 # Use the first track found.
                 try:
