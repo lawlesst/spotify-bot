@@ -16,6 +16,13 @@ api_base_url = "https://api.spotify.com/v1"
 search_base_url = f"{api_base_url}/search?"
 
 
+def grouper(lst, n):
+    if isinstance(lst, set):
+        lst = list(lst)
+    for i in range(0, len(lst), n):
+        yield lst[i : i + n]
+
+
 class SpotifyAPIConfigException(Exception):
     pass
 
@@ -88,9 +95,7 @@ class Spotify(object):
         offset = 0
         page_size = 50
         # To do - iterate when user has more than 50 playlists
-        rsp = self.session.get(
-            url, params={"limit": page_size, "offset": offset}
-        )
+        rsp = self.session.get(url, params={"limit": page_size, "offset": offset})
         rsp.raise_for_status()
         data = rsp.json()
         for plist in data["items"]:
@@ -120,9 +125,7 @@ class Spotify(object):
         page_size = 50
         playlist_id = None
         # To do - iterate when user has more than 50 playlists
-        rsp = self.session.get(
-            url, params={"limit": page_size, "offset": offset}
-        )
+        rsp = self.session.get(url, params={"limit": page_size, "offset": offset})
         rsp.raise_for_status()
         data = rsp.json()
         for plist in data["items"]:
@@ -173,6 +176,48 @@ class Spotify(object):
         )
         rsp.raise_for_status()
         return rsp.json()
+
+    def get_playlist_tracks(self, playlist_id, limit=50):
+        url = f"{api_base_url}/playlists/{playlist_id}/tracks"
+        offset = 0
+        out = []
+        while True:
+            params = dict(offset=offset, limit=limit, fields="items(track(id)")
+            rsp = self.session.get(url, params=params)
+            rsp.raise_for_status()
+            items = rsp.json()
+            if len(items["items"]) == 0:
+                break
+            for e in items["items"]:
+                out.append(f"spotify:track:{e['track']['id']}")
+            offset += limit
+        return out
+
+    def clear_playlist_tracks(self, playlist_id, batch_size=75):
+        url = f"{api_base_url}/playlists/{playlist_id}/tracks"
+        tracks = self.get_playlist_tracks(playlist_id)
+
+        for batch in grouper(tracks, batch_size):
+            rsp = self.session.delete(
+                url,
+                json={
+                    "tracks": [{"uri": t} for t in batch],
+                },
+            )
+            rsp.raise_for_status()
+        return True
+
+    def add_tracks_to_playlist(self, playlist_id, tracks, batch_size=75):
+        url = f"{api_base_url}/playlists/{playlist_id}/tracks"
+        for batch in grouper(tracks, batch_size):
+            rsp = self.session.post(
+                url,
+                json={
+                    "uris": batch,
+                },
+            )
+            rsp.raise_for_status()
+        return True
 
     def get_show(self, show_id):
         url = f"{api_base_url}/shows/{show_id}"
