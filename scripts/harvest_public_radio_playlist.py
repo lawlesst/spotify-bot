@@ -134,6 +134,7 @@ WNCW's Music Mix with Martin Anderson. Last episode --updated--. Donate to WNCW 
 """,
     },
 }
+COMBINED_PLAYLIST_ID = "6DkqWyHXFG7721R277gsjt"
 
 LAST_UPDATE_RE = re.compile(
     "(?:Last episode|Date)\:?\s([0-9]{4})-([0-9]{2})-([0-9]{2})"

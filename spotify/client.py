@@ -219,6 +219,16 @@ class Spotify(object):
             rsp.raise_for_status()
         return True
 
+    def remove_tracks_from_playlist(self, playlist_id, tracks, batch_size=75):
+        url = f"{api_base_url}/playlists/{playlist_id}/tracks"
+        for batch in grouper(tracks, batch_size):
+            rsp = self.session.delete(
+                url,
+                json={"tracks": [{"uri": t} for t in batch]},
+            )
+            rsp.raise_for_status()
+        return True
+
     def get_show(self, show_id):
         url = f"{api_base_url}/shows/{show_id}"
         rsp = self.session.get(url)
