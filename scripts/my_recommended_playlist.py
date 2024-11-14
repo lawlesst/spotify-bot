@@ -89,9 +89,9 @@ def main():
     track_ids = [track.replace("spotify:track:", "") for track in tracks]
 
     # Get saved tracks - we will only use tracks that are saved.
-    is_saved = api.get_saved_tracks(track_ids)
+    saved_tracks = api.get_saved_tracks(track_ids)
     for_recommendations = []
-    for track, is_saved in is_saved.items():
+    for track, is_saved in saved_tracks.items():
         if is_saved is True:
             for_recommendations.append(track)
 
@@ -129,13 +129,16 @@ def main():
     )
     to_add = []
     for rec_track in rsp["tracks"]:
+        t_id = rec_track["id"]
         t_uri = rec_track["uri"]
         if t_uri in recently_played:
             logger.info(f"Skipping {t_uri} as it is in recently played.")
-        if t_uri in recent_top_tracks:
+        elif t_uri in recent_top_tracks:
             logger.info(f"Skipping {t_uri} as it is in recent top tracks.")
+        elif saved_tracks.get(t_id, False) is True:
+            logger.info(f"Skipping {t_uri} as it is a saved track.")
         else:
-            to_add.append(rec_track["uri"])
+            to_add.append(t_uri)
 
         if len(to_add) >= args.num_recommendations:
             break
