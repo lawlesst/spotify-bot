@@ -1,5 +1,14 @@
 """
-Aggregate public radio playlists.
+Generate a playlist using the Spotify API's recommendations endpoint.
+
+General process:
+
+- Get tracks from a seed playlist, in my case "On Repeat".
+- Get the user's top tracks
+- Get the user's top artists with a popularity below a certain threshold
+- Generate recommendations using top tracks and top artists
+- Exclude any recommendations that are in recent top tracks, recently played, or saved already in the library
+
 """
 
 import argparse
