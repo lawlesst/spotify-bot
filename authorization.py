@@ -11,7 +11,7 @@ from dotenv import dotenv_values
 config = dotenv_values()
 
 redirect_uri = "https://lawlesst.github.io/tools/auth-redirect.html"
-scope = "playlist-modify-private playlist-modify-public playlist-read-private playlist-read-collaborative user-read-playback-state user-modify-playback-state user-read-recently-played"
+scope = "playlist-modify-private playlist-modify-public playlist-read-private playlist-read-collaborative user-read-playback-state user-modify-playback-state user-read-recently-played user-library-read user-top-read"
 
 
 def get_code():
@@ -26,9 +26,7 @@ def get_code():
         },
     )
     r.raise_for_status()
-    logging.info(
-        f"Opening {r.url} in browser. Copy code parameter on redirected page."
-    )
+    logging.info(f"Opening {r.url} in browser. Copy code parameter on redirected page.")
     # Open the URL
     _ = webbrowser.open(r.url)
 
@@ -68,9 +66,7 @@ def main():
         get_code()
     else:
         if args.code is None:
-            raise Exception(
-                "Passing a code is required for getting the refresh token."
-            )
+            raise Exception("Passing a code is required for getting the refresh token.")
         logging.info(f"Obtaining authentication details.")
         auth_info = get_refresh_code(args.code)
         auth_info["client_id"] = config["CLIENT_ID"]

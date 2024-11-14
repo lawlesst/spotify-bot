@@ -5,6 +5,7 @@ Spotify API client.
 import base64
 import json
 import logging
+from datetime import datetime, timedelta
 
 import requests
 from dotenv import dotenv_values
@@ -132,7 +133,6 @@ class Spotify(object):
             if plist["name"] == name:
                 playlist_id = plist["id"]
                 return (playlist_id, False)
-                break
         offset += page_size
         payload = {"name": name, "description": description, "public": True}
         # create
@@ -266,3 +266,54 @@ class Spotify(object):
         rsp = self.session.post(url, params=d)
         rsp.raise_for_status()
         return True
+
+    def get_saved_tracks(self, tracks, batch_size=50):
+        url = f"{api_base_url}/me/tracks/contains"
+        d = {}
+        for batch in grouper(tracks, batch_size):
+            rsp = self.session.get(
+                url,
+                params={"ids": ",".join(batch)},
+            )
+            rsp.raise_for_status()
+            d.update(dict(zip(batch, rsp.json())))
+        return d
+
+    def get_recommendations(self, **kwargs):
+        url = f"{api_base_url}/recommendations"
+        rsp = self.session.get(url, params=kwargs)
+        rsp.raise_for_status()
+        return rsp.json()
+
+    def get_top_items(self, _type, **kwargs):
+        url = f"{api_base_url}/me/top/{_type}"
+        rsp = self.session.get(url, params=kwargs)
+        rsp.raise_for_status()
+        return rsp.json()
+
+    def get_top_tracks(self, term="short_term", max=None):
+        url = f"{api_base_url}/me/top/tracks"
+        out = []
+        rsp = self.session.get(url, params={"limit": 50, "offset": 0})
+        rsp.raise_for_status()
+        while True:
+            data = rsp.json()
+            for item in data["items"]:
+                out.append(item["uri"])
+            if data["next"] is None:
+                break
+            if (max is not None) and (len(out) >= max):
+                break
+            rsp = self.session.get(data["next"])
+            rsp.raise_for_status()
+        return out
+
+    def get_recently_played(self, limit=50):
+        out = []
+        url = f"{api_base_url}/me/player/recently-played"
+        rsp = self.session.get(url, params={"limit": limit})
+        rsp.raise_for_status()
+        data = rsp.json()
+        for item in data["items"]:
+            out.append(item["track"]["uri"])
+        return out
