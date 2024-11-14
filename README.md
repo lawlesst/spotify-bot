@@ -6,6 +6,7 @@ Utilities:
 
 * [Harvest public radio episodes](./scripts/harvest_public_radio_playlist.py) and create Spotify playlists. See this [blog post for an overview](https://lawlesst.github.io/notebook/spotify-playlists.html).
 * [Add the NPR hourly news update](./scripts/add_show_to_queue.py) to your listening queue. This can be scheduled to run throughout the day.
+* [Create a playlist from custom recommendations](./scripts/my_recommended_playlist.py). This uses the Spotify API recommendations endpoint and custom logic based on top tracks and artists.
 
 More details follow for anyone attempting to reuse this code.
 
