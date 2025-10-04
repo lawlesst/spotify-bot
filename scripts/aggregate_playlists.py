@@ -73,8 +73,10 @@ def main():
     spotify_user = config["SPOTIFY_USER_ID"]
 
     if args.playlist_type == 'daily':
+        logger.info("Aggregating into daily playlist.")
         target_playlist_id = UNDISCOVERED_DAILY_PLAYLIST_ID
     else:
+        logger.info("Aggregating into weekly playlist.")
         target_playlist_id = UNDISCOVERED_WEEKLY_PLAYLIST_ID
 
     to_aggregate = [PROGRAMS[p] for p in program_slugs]
