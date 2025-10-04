@@ -5,13 +5,18 @@ Aggregate public radio playlists.
 import argparse
 import logging
 import logging.handlers
+import re
 import sys
 from datetime import date
 from math import log
 from pathlib import Path
 
 from dotenv import dotenv_values
-from harvest_public_radio_playlist import COMBINED_PLAYLIST_ID, PROGRAMS
+from harvest_public_radio_playlist import (
+    PROGRAMS,
+    UNDISCOVERED_DAILY_PLAYLIST_ID,
+    UNDISCOVERED_WEEKLY_PLAYLIST_ID,
+)
 
 config = dotenv_values()
 
@@ -52,10 +57,10 @@ def main():
     )
     parser.add_argument("program", choices=playlist_choices, nargs="+")
     parser.add_argument(
-        "--combined-playlist-id",
-        required=False,
-        default=COMBINED_PLAYLIST_ID,
-        help="Playlist ID for the playlist to be aggregated.",
+        "--playlist-type",
+        default='daily',
+        choices=['daily', 'weekly'],
+        help="Aggregate tracks into a daily or weekly playlist.",
     )
     parser.add_argument(
         "--dry-run",
@@ -67,10 +72,12 @@ def main():
     program_slugs = args.program
     spotify_user = config["SPOTIFY_USER_ID"]
 
-    if "all" in program_slugs:
-        to_aggregate = [v for v in PROGRAMS.values()]
+    if args.playlist_type == 'daily':
+        target_playlist_id = UNDISCOVERED_DAILY_PLAYLIST_ID
     else:
-        to_aggregate = [PROGRAMS[p] for p in program_slugs]
+        target_playlist_id = UNDISCOVERED_WEEKLY_PLAYLIST_ID
+
+    to_aggregate = [PROGRAMS[p] for p in program_slugs]
 
     api = Spotify(auth_file=auth_file)
 
@@ -86,7 +93,7 @@ def main():
 
     logger.info(f"Total tracks: {len(all_tracks)}")
 
-    existing_tracks = api.get_playlist_tracks(COMBINED_PLAYLIST_ID)
+    existing_tracks = api.get_playlist_tracks(target_playlist_id)
 
     already_in_playlist = set(all_tracks) & set(existing_tracks)
     logger.info(f"Already in playlist: {len(already_in_playlist)}")
@@ -100,21 +107,29 @@ def main():
     else:
         if len(to_remove) > 0:
             logger.info(f"Removing {len(to_remove)} tracks from combined playlist.")
-            _ = api.remove_tracks_from_playlist(COMBINED_PLAYLIST_ID, to_remove)
+            _ = api.remove_tracks_from_playlist(target_playlist_id, to_remove)
 
         if len(to_add) > 0:
             logger.info(f"Adding {len(to_add)} tracks to combined playlist.")
-            _ = api.add_tracks_to_playlist(COMBINED_PLAYLIST_ID, to_add)
+            _ = api.add_tracks_to_playlist(target_playlist_id, to_add)
 
         if (len(to_remove) > 0) or (len(to_add) > 0):
             formatted_date = date.today().strftime("%Y-%m-%d")
-            details = {
-                "description": f"Aggregation of tracks from various public radio programs. DJs > bots. Last updated {formatted_date}.",
-                "name": "Undiscovered Daily",
-            }
-            _ = api.update_playlist_details(COMBINED_PLAYLIST_ID, details)
+            if args.playlist_type == 'daily':
+                details = {
+                    "description": f"Aggregation of tracks from various public radio programs. DJs > bots. Last updated {formatted_date}.",
+                    "name": "Undiscovered Daily",
+                }
+            else:
+                details = {
+                    "description": f"Aggregation of tracks from various weekly public radio programs. DJs > bots. Last updated {formatted_date}.",
+                    "name": "Undiscovered Weekly",
+                }
+            logger.info(f"Updating playlist details: {details['name']} - {formatted_date}")
+            _ = api.update_playlist_details(target_playlist_id, details)
 
 
 if __name__ == "__main__":
     logger = logging.getLogger()
     main()
+#
