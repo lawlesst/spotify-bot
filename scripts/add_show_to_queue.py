@@ -47,7 +47,6 @@ def main():
     program_choices = list(program_map.keys())
     parser = argparse.ArgumentParser(description="Add shows to queue.")
     parser.add_argument("program", nargs="+", choices=program_choices)
-    parser.add_argument("device_id")
     parser.add_argument(
         "--force",
         required=False,
@@ -99,8 +98,7 @@ def main():
             else:
                 print(f"Adding {show_uri} to queue.")
                 _ = api.add_to_queue(
-                    show_uri,
-                    device_id=args.device_id,
+                    show_uri
                 )
 
 
