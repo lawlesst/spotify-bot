@@ -146,7 +146,7 @@ UNDISCOVERED_DAILY_PLAYLIST_ID = "6DkqWyHXFG7721R277gsjt"
 UNDISCOVERED_WEEKLY_PLAYLIST_ID = "4ElKWUbqpHT16i1QQsPMZs"
 
 LAST_UPDATE_RE = re.compile(
-    "(?:Last episode|Date)\:?\s([0-9]{4})-([0-9]{2})-([0-9]{2})"
+    r"(?:Last episode|Date)\:?\s([0-9]{4})-([0-9]{2})-([0-9]{2})"
 )
 
 
