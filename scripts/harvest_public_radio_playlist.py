@@ -19,6 +19,8 @@ config = dotenv_values()
 cwd = Path(__file__).parent
 parent_cwd = cwd.parent
 sys.path.append(str(parent_cwd))
+from scrapers.bbc import BBCScraper  # noqa
+from scrapers.npr import get_episode  # noqa
 # Add client to path.
 from spotify.client import Spotify
 
@@ -50,7 +52,6 @@ PROGRAMS = {
         "widget": "5187f12ae1c8fae1350fa49f",
         "program_id": "5187f133e1c8fae1350fa4c7",
         "name": "WEMU Roots Music Project",
-        "interval": "weekly",
         "description": """
 WEMU - The Roots Music Project with Jeremy Baldwin: https://www.wemu.org/show/the-roots-music-project-with-jeremy-baldwin. Last episode --updated--. Donate to WEMU: https://donate.nprstations.org/wemu/
             """,
@@ -59,7 +60,6 @@ WEMU - The Roots Music Project with Jeremy Baldwin: https://www.wemu.org/show/th
         "widget": "5187f12ae1c8fae1350fa49f",
         "program_id": "5187f130e1c8fae1350fa4a7",
         "name": "WEMU Memphis to Motown",
-        "interval": "weekly",
         "description": """
 WEMU - From Memphis to Motown with Wendy Wright: https://www.wemu.org/show/from-memphis-to-motown. Last episode --updated--. Donate to WEMU: https://donate.nprstations.org/wemu/
             """,
@@ -68,7 +68,6 @@ WEMU - From Memphis to Motown with Wendy Wright: https://www.wemu.org/show/from-
         "widget": "5187f56de1c8c6a808e91b8d",
         "program_id": "5187f5aee1c8c6a808e91ba4",
         "name": "WNCW Dead Air",
-        "interval": "daily",
         "description": """
 WNCW Dead Air: https://www.wncw.org/show/dead-air. Last episode --updated--. Donate to WNCW at: https://support.wncw.org/thankyougifts
 """,
@@ -77,7 +76,6 @@ WNCW Dead Air: https://www.wncw.org/show/dead-air. Last episode --updated--. Don
         "widget": "5187f56de1c8c6a808e91b8d",
         "program_id": "5245f100ea9e43597100048e",
         "name": "WNCW Country Gold",
-        "interval": "weekly",
         "description": """
 WNCW Country Gold: https://www.wncw.org/show/country-gold. Last episode --updated--. Donate to WNCW at https://support.wncw.org/thankyougifts
 """,
@@ -86,7 +84,6 @@ WNCW Country Gold: https://www.wncw.org/show/country-gold. Last episode --update
         "widget": "5187f56de1c8c6a808e91b8d",
         "program_id": "5187f5afe1c8c6a808e91bb4",
         "name": "WNCW Cosmic American Music Show",
-        "interval": "weekly",
         "description": """
 WNCW Cosmic American Music Show: https://www.wncw.org/show/cosmic-american-music-show. Last episode --updated--. Donate to WNCW at https://support.wncw.org/thankyougifts
 """,
@@ -112,13 +109,11 @@ WNCW Cosmic American Music Show: https://www.wncw.org/show/cosmic-american-music
         "program_id": "5e066050d638004d6fe76dee",
         "name": "WFPK: Mel's Diner",
         "description": "--name--: https://www.lpm.org/music. Last episode: --updated--",
-        "start_date": date(2023, 7, 31),
     },
     "roland": {
         "widget": "5187f56de1c8c6a808e91b8d",
         "program_id": "60ec6586de940e741d46eef1",
         "name": "WNCW's Music Mix with Roland Dierauf",
-        "interval": "daily",
         "description": """
 WNCW's Music Mix with Roland Dierauf. Last episode --updated--. Donate to WNCW at https://support.wncw.org/thankyougifts
 """,
@@ -128,11 +123,24 @@ WNCW's Music Mix with Roland Dierauf. Last episode --updated--. Donate to WNCW a
         "widget": "5187f56de1c8c6a808e91b8d",
         "program_id": "5187f5b1e1c8c6a808e91bc9",
         "name": "WNCW's Music Mix with Martin Anderson",
-        "interval": "daily",
         "description": """
 WNCW's Music Mix with Martin Anderson. Last episode --updated--. Donate to WNCW at https://support.wncw.org/thankyougifts
 """,
     },
+    "cerys": {
+        "source": "bbc",
+        "url": "https://www.bbc.co.uk/programmes/b00llg30/episodes/player",
+        "name": "Cerys Matthews Show BBC Radio 6",
+        "description": """
+Cerys Matthews Show BBC Radio 6: https://www.bbc.co.uk/programmes/b00llg30. Last episode --updated--.
+""",
+    },
+    "ricky": {
+        "source": "bbc",
+        "url": "https://www.bbc.co.uk/programmes/b00hh26l/episodes/player",
+        "name": "Another Country with Ricky Ross BBC Radio Scotland",
+        "description": """Another Country with Ricky Ross BBC Radio Scotland: https://www.bbc.co.uk/programmes/b00hh26l. Last episode --updated--."""
+    }
 }
 COMBINED_PLAYLIST_ID = "6DkqWyHXFG7721R277gsjt"
 
@@ -156,7 +164,7 @@ def date_range(start_date, end_date, interval):
         yield start_date + timedelta(n)
 
 
-def get_episode(widget, program_id, episode_date):
+def get_episode_orig(widget, program_id, episode_date):
     url = f"https://api.composer.nprstations.org/v1/widget/{widget}/playlist?prog_id={program_id}&datestamp={episode_date}"
     r = requests.get(url)
     logging.debug(f"Episode track URL: {url}")
@@ -168,6 +176,40 @@ def get_episode(widget, program_id, episode_date):
         logging.debug(f"No episode found for {program_id} on {episode_date}")
         return {}
 
+def get_public_radio_tracks(episodes_from_date, program):
+    # Program specific tracks to skip. Defined in config.
+    program_skips = program.get("skip_tracks_artists")
+    if program_skips is not None:
+        program_skips = re.compile(program_skips)
+    # Page through feed to find latest episode and update playlist.
+    queries = []
+    formatted_edate = episodes_from_date.strftime("%Y-%m-%d")
+    logging.debug(f"Getting {program['name']} since {formatted_edate}")
+    episode = get_episode(
+        program["widget"],
+        program["program_id"],
+        formatted_edate,
+    )
+    for song in episode.get("playlist", []):
+        track = song.get("trackName")
+        artist = song.get("artistName")
+        album = song.get("collectionName", "")
+        if (track is None) or (artist is None):
+            logging.debug(f"Skipping: {json.dumps(song)}")
+            continue
+        if program_skips is not None:
+            track = song.get("trackName")
+            skip = False
+            if program_skips.search(track) is not None:
+                skip = True
+            elif program_skips.search(artist) is not None:
+                skip = True
+            if skip is True:
+                logging.debug(f"Skipping: {json.dumps(song)}")
+                continue
+        query = f"track: {clean_search_term(track)} album: {clean_search_term(album)} artist: {clean_search_term(artist)}"
+        queries.append(query)
+        return queries
 
 def main():
     playlist_choices = list(PROGRAMS.keys()) + ["all"]
@@ -192,8 +234,6 @@ def main():
     program_slugs = args.program
     spotify_user = config["SPOTIFY_USER_ID"]
 
-    DATE_CUTOFF = date(2023, 8, 1)
-
     if "all" in program_slugs:
         to_harvest = [v for v in PROGRAMS.values()]
     else:
@@ -209,130 +249,80 @@ def main():
         spotify_playlist_details = api.get_user_playlist_by_name(
             spotify_user, program["name"]
         )
-        find_updates_from = None
         if spotify_playlist_details is None:
-            _ = api.create_user_playlist(spotify_user, program_name)
+            playlist_id, created = api.get_or_create_playlist(spotify_user, program["name"], program["description"].replace("--updated--", date.today().strftime("%Y-%m-%d")))
+            if created is True:
+                logging.info(f"{program_name}: playlist created. Spotify ID: {playlist_id}")
             spotify_playlist_details = api.get_user_playlist_by_name(
                 spotify_user, program_name
             )
-        # Get the last episode from the description, if it exists.
-        if args.force is True:
-            find_updates_from = DATE_CUTOFF
+
+        if program.get("source") == "bbc":
+            b = BBCScraper(program["url"])
+            episode = b.get_latest_episode()
         else:
-            find_updates_from = None
-            last_update_match = LAST_UPDATE_RE.search(
-                spotify_playlist_details["description"]
-            )
-            if last_update_match is not None:
-                year, month, day = last_update_match.groups()
-                if year is not None:
-                    find_updates_from = date(
-                        int(year), int(month), int(day)
-                    ) + timedelta(days=1)
+            episode = get_episode(program["widget"], program["program_id"])
 
-        episodes_from_date = date.today()
-        last_episode_date_to_check = (
-            find_updates_from or program.get("start_date") or DATE_CUTOFF
-        )
-
-        if (episodes_from_date > date.today()) or (
-            last_episode_date_to_check >= episodes_from_date
-        ):
-            logging.info(
-                f"{program_name} episodes are up-to-date, updated on {last_episode_date_to_check}."
-            )
+        logging.debug(episode.date, len(episode.tracks), episode.tracks[0], episode.tracks[-1])
+        # Check if playlist was last updated on the same date as the episode
+        spotify_last_updated = None
+        description_text = spotify_playlist_details.get("description", "")
+        match = LAST_UPDATE_RE.search(description_text)
+        if match:
+            year, month, day = match.groups()
+            spotify_last_updated = date(int(year), int(month), int(day))
+        if spotify_last_updated == episode.date.date() and not args.force:
+            logging.info(f"{program_name}: skipping {program_name}. Already up to date for {episode.date}")
             continue
         else:
-            logging.info(
-                f"{program['name']}. Updating. Looking for episodes since {last_episode_date_to_check}."
+            logging.info(f"{program_name}: updating. Episode date: {episode.date}. Spotify last updated: {spotify_last_updated}")
+        # Update the description and playlist tracks.
+        if len(episode.tracks) > 0:
+            description = (
+                program.get("description", "")
+                .strip()
+                .replace("--updated--", episode.date.strftime("%Y-%m-%d"))
+                .replace("--name--", program["name"])
+                .replace("\n", " ")
             )
-
-        # Program specific tracks to skip. Defined in config.
-        program_skips = program.get("skip_tracks_artists")
-        if program_skips is not None:
-            program_skips = re.compile(program_skips)
-
-        # Page through feed to find latest episode and update playlist.
-        while True:
-            formatted_edate = episodes_from_date.strftime("%Y-%m-%d")
-            logging.debug(f"Getting {program['name']} since {formatted_edate}")
-            n = 0
-            episode = get_episode(
-                program["widget"],
-                program["program_id"],
-                formatted_edate,
-            )
-            tracks = []
-            for song in episode.get("playlist", []):
-                track = song.get("trackName")
-                artist = song.get("artistName")
-                album = song.get("collectionName", "")
-                if (track is None) or (artist is None):
-                    logging.debug(f"Skipping: {json.dumps(song)}")
-                    continue
-                if program_skips is not None:
-                    track = song.get("trackName")
-                    skip = False
-                    if program_skips.search(track) is not None:
-                        skip = True
-                    elif program_skips.search(artist) is not None:
-                        skip = True
-                    if skip is True:
-                        logging.debug(f"Skipping: {json.dumps(song)}")
-                        continue
-                query = f"track: {clean_search_term(track)} album: {clean_search_term(album)} artist: {clean_search_term(artist)}"
-                try:
-                    rsp = api.search(query)
-                except requests.exceptions.HTTPError as e:
-                    logging.error(f"Spotify search error: {e}")
-                    logging.error(f"Query: {query}")
-                    continue
-                logging.debug(f"Looking for {track} by {artist} on {album}.")
-                # Use the first track found.
-                try:
-                    track = rsp["tracks"]["items"][0]
-                except IndexError:
-                    logging.debug(f"*** can't find track for {query}")
-                    continue
-                if (track is None) or (track.get("id") is None):
-                    logging.debug(f"*** can't find track for {query}")
-                else:
-                    tracks.append(f"spotify:track:{track['id']}")
-                    n += 1
-            # Update the description and playlist tracks.
-            if len(tracks) > 0:
-                description = (
-                    program.get("description", "")
-                    .strip()
-                    .replace("--updated--", formatted_edate)
-                    .replace("--name--", program["name"])
-                    .replace("\n", " ")
+            if args.dry_run is True:
+                print(
+                    f"** Dry run: {episode.date.strftime('%Y-%m-%d')} would add {len(episode.tracks)} tracks."
                 )
-                if args.dry_run is True:
-                    print(
-                        f"** Dry run: {episodes_from_date} would add {len(tracks)} tracks."
-                    )
-                    print(f"Description:\n {description}")
-                else:
-                    logging.debug(f"{episodes_from_date} adding {len(tracks)} tracks.")
+                print(f"Description:\n {description}")
+            else:
+
+                logging.info(f"{program_name}: Searching spotify for {len(episode.tracks)} tracks.")
+                found_tracks = []
+                for track in episode.tracks:
+                    q = f"track: {clean_search_term(track.name)} artist: {clean_search_term(track.artist)}"
+                    try:
+                       rsp = api.search(q)
+                    except requests.exceptions.HTTPError as e:
+                       logging.error(f"Spotify search error: {e}")
+                       logging.error(f"Query: {q}")
+                    
+                    try:
+                        track = rsp["tracks"]["items"][0]
+                    except IndexError:
+                        logging.debug(f"{program_name}: *** can't find track for {q}")
+                        continue
+                    found_tracks.append(f"spotify:track:{track['id']}")
+
+                current_tracks = api.get_playlist_tracks(spotify_playlist_details["id"])
+                new_tracks = list(set(found_tracks) - set(current_tracks))
+                remove_tracks = list(set(current_tracks) - set(found_tracks))
+                logging.info(f"{program_name}: adding {len(new_tracks)} tracks. Removing {len(remove_tracks)} tracks.")
+                _ = api.add_tracks_to_playlist(spotify_playlist_details["id"], new_tracks)
+                _ = api.remove_tracks_from_playlist(spotify_playlist_details["id"], remove_tracks)
+                logging.info(
+                    f"{program_name}: episode {episode.date}. {len(found_tracks)} songs added."
+                )
+                if len(new_tracks) > 0 or len(remove_tracks) > 0:
                     _ = api.update_playlist_details(
                         spotify_playlist_details["id"],
                         {"description": description},
                     )
-                    _ = api.update_playlist_tracks(
-                        spotify_playlist_details["id"], tracks
-                    )
-                    logging.info(
-                        f"{program_name} episode {episodes_from_date}. {n} songs added."
-                    )
-                break
-            else:
-                episodes_from_date = episodes_from_date - timedelta(days=1)
-                if episodes_from_date < last_episode_date_to_check:
-                    logging.info(
-                        f"{program_name} reached {episodes_from_date}. No new episodes found."
-                    )
-                    break
 
 
 if __name__ == "__main__":
