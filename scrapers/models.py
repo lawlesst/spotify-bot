@@ -1,6 +1,4 @@
 from datetime import datetime
-from re import S
-from turtle import st
 from typing import List, Optional
 
 from pydantic import BaseModel
