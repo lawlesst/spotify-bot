@@ -140,6 +140,14 @@ Cerys Matthews Show BBC Radio 6: https://www.bbc.co.uk/programmes/b00llg30. Last
         "url": "https://www.bbc.co.uk/programmes/b00hh26l/episodes/player",
         "name": "Another Country with Ricky Ross BBC Radio Scotland",
         "description": """Another Country with Ricky Ross BBC Radio Scotland: https://www.bbc.co.uk/programmes/b00hh26l. Last episode --updated--."""
+    },
+    "kyle": {
+        "widget": "51929bfde1c8886d5ccfb1d9",
+        "program_id": "623e628fa27ccd65ee3c2144",
+        "url": "https://www.lpm.org/music",
+        "name": "WFPK: Kyle Meredith",
+        "description": "WFPK Kyle Meredith: https://www.lpm.org/music. Last episode: --updated--",
+
     }
 }
 UNDISCOVERED_DAILY_PLAYLIST_ID = "6DkqWyHXFG7721R277gsjt"
