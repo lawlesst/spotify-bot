@@ -278,6 +278,27 @@ class Spotify(object):
             rsp.raise_for_status()
             d.update(dict(zip(batch, rsp.json())))
         return d
+    
+    def get_all_saved_tracks(self, max_tracks=None):
+        url = f"{api_base_url}/me/tracks"
+        out = []
+        offset = 0
+        limit = 50
+        while True:
+            rsp = self.session.get(
+                url,
+                params={"limit": limit, "offset": offset},
+            )
+            rsp.raise_for_status()
+            data = rsp.json()
+            for item in data["items"]:
+                out.append(item["track"])
+            if data["next"] is None:
+                break
+            if (max_tracks is not None) and (len(out) >= max_tracks):
+                break
+            offset += limit
+        return out
 
     def get_recommendations(self, **kwargs):
         url = f"{api_base_url}/recommendations"
@@ -290,6 +311,20 @@ class Spotify(object):
         rsp = self.session.get(url, params=kwargs)
         rsp.raise_for_status()
         return rsp.json()
+    
+    def get_track_info(self, tracks, batch_size=30):
+        url = f"{api_base_url}/tracks"
+        out = []
+        tracks = [t.replace("spotify:track:", "") for t in tracks]
+        for batch in grouper(tracks, batch_size):
+            rsp = self.session.get(
+                url,
+                params={"ids": ",".join(batch)},
+            )
+            rsp.raise_for_status()
+            for item in rsp.json()["tracks"]:
+                out.append(item)
+        return out
 
     def get_top_tracks(self, term="short_term", max=None):
         url = f"{api_base_url}/me/top/tracks"
@@ -306,6 +341,14 @@ class Spotify(object):
                 break
             rsp = self.session.get(data["next"])
             rsp.raise_for_status()
+        return out
+    
+    def get_artist_top_tracks(self, artist_id, country="US"):
+        url = f"{api_base_url}/artists/{artist_id}/top-tracks"
+        rsp = self.session.get(url, params={"country": country})
+        rsp.raise_for_status()
+        data = rsp.json()
+        out = [f"spotify:track:{t['id']}" for t in data["tracks"]]
         return out
 
     def get_recently_played(self, limit=50):
