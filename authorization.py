@@ -67,7 +67,7 @@ def main():
     else:
         if args.code is None:
             raise Exception("Passing a code is required for getting the refresh token.")
-        logging.info(f"Obtaining authentication details.")
+        logging.info("Obtaining authentication details.")
         auth_info = get_refresh_code(args.code)
         auth_info["client_id"] = config["CLIENT_ID"]
         auth_info["client_secret"] = config["CLIENT_SECRET"]

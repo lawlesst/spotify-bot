@@ -13,16 +13,16 @@ from pathlib import Path
 
 import requests
 from dotenv import dotenv_values
+from scrapers.bbc import BBCScraper
+from scrapers.npr import get_episode
+from spotify.client import Spotify
+from spotify.utils import get_auth_file
 
 config = dotenv_values()
 
+
+
 cwd = Path(__file__).parent
-parent_cwd = cwd.parent
-sys.path.append(str(parent_cwd))
-from scrapers.bbc import BBCScraper  # noqa
-from scrapers.npr import get_episode  # noqa
-# Add client to path.
-from spotify.client import Spotify
 
 file_handler = logging.handlers.RotatingFileHandler(
     filename=cwd.joinpath("pr.log"),
@@ -41,11 +41,7 @@ logging.basicConfig(
     handlers=handlers,
 )
 
-auth_file = parent_cwd.joinpath(".spotify-auth.json")
-if not auth_file.exists():
-    raise Exception(
-        f"Authentication file not found at {auth_file}. Run authentication.py as described in the README."
-    )
+auth_file = get_auth_file()
 
 PROGRAMS = {
     "rmp": {

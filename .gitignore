@@ -5,6 +5,7 @@ data/*
 .spotify-auth.json
 **/*.log
 scratch.txt
+scripts/data/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

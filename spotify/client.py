@@ -5,7 +5,6 @@ Spotify API client.
 import base64
 import json
 import logging
-from datetime import datetime, timedelta
 
 import requests
 from dotenv import dotenv_values
@@ -119,7 +118,7 @@ class Spotify(object):
             print(rsp.headers)
             raise Exception("Failed creation")
 
-    def get_or_create_playlist(self, user, name, description):
+    def get_or_create_playlist(self, user, name, description, public=True):
         url = f"{api_base_url}/users/{user}/playlists"
 
         offset = 0
@@ -134,7 +133,7 @@ class Spotify(object):
                 playlist_id = plist["id"]
                 return (playlist_id, False)
         offset += page_size
-        payload = {"name": name, "description": description, "public": True}
+        payload = {"name": name, "description": description, "public": public}
         # create
         if playlist_id is None:
             logging.info(f"Creating playlist {name}.")
@@ -300,6 +299,27 @@ class Spotify(object):
             offset += limit
         return out
 
+    def get_all_saved_tracks_with_added_at(self, max_tracks=None):
+        url = f"{api_base_url}/me/tracks"
+        out = []
+        offset = 0
+        limit = 50
+        while True:
+            rsp = self.session.get(
+                url,
+                params={"limit": limit, "offset": offset},
+            )
+            rsp.raise_for_status()
+            data = rsp.json()
+            for item in data["items"]:
+                out.append(item)
+            if data["next"] is None:
+                break
+            if (max_tracks is not None) and (len(out) >= max_tracks):
+                break
+            offset += limit
+        return out
+
     def get_recommendations(self, **kwargs):
         url = f"{api_base_url}/recommendations"
         rsp = self.session.get(url, params=kwargs)
@@ -325,11 +345,28 @@ class Spotify(object):
             for item in rsp.json()["tracks"]:
                 out.append(item)
         return out
+    
+    def get_top_artists(self, term="short_term", num=20, max=None):
+        url = f"{api_base_url}/me/top/artists"
+        out = []
+        rsp = self.session.get(url, params={"limit": num, "offset": 0})
+        rsp.raise_for_status()
+        while True:
+            data = rsp.json()
+            for item in data["items"]:
+                out.append(item["uri"])
+            if data["next"] is None:
+                break
+            if (max is not None) and (len(out) >= max):
+                break
+            rsp = self.session.get(data["next"])
+            rsp.raise_for_status()
+        return out
 
-    def get_top_tracks(self, term="short_term", max=None):
+    def get_top_tracks(self, term="short_term", num=20,max=None):
         url = f"{api_base_url}/me/top/tracks"
         out = []
-        rsp = self.session.get(url, params={"limit": 50, "offset": 0})
+        rsp = self.session.get(url, params={"limit": num, "offset": 0})
         rsp.raise_for_status()
         while True:
             data = rsp.json()
@@ -359,4 +396,33 @@ class Spotify(object):
         data = rsp.json()
         for item in data["items"]:
             out.append(item["track"]["uri"])
+        return out
+
+    def get_recently_played_since(self, since_datetime, limit=50, max_items=None):
+        """
+        Get track URIs played since a given datetime.
+        """
+        out = []
+        url = f"{api_base_url}/me/player/recently-played"
+        params = {
+            "limit": limit,
+            "after": int(since_datetime.timestamp() * 1000),
+        }
+        rsp = self.session.get(url, params=params)
+        rsp.raise_for_status()
+        data = rsp.json()
+
+        while True:
+            for item in data.get("items", []):
+                out.append(item["track"]["uri"])
+                if max_items is not None and len(out) >= max_items:
+                    return out
+
+            next_url = data.get("next")
+            if not next_url:
+                break
+            rsp = self.session.get(next_url)
+            rsp.raise_for_status()
+            data = rsp.json()
+
         return out

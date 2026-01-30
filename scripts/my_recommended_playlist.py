@@ -14,21 +14,15 @@ General process:
 import argparse
 import logging
 import logging.handlers
-import sys
 from datetime import date
-from pathlib import Path
 
 from dotenv import dotenv_values
 
-config = dotenv_values()
-
-cwd = Path(__file__).parent
-parent_cwd = cwd.parent
-sys.path.append(str(parent_cwd))
 from harvest_public_radio_playlist import handlers
-
-# Add client to path.
 from spotify.client import Spotify
+from spotify.utils import get_auth_file
+
+config = dotenv_values()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -36,11 +30,7 @@ logging.basicConfig(
     handlers=handlers,
 )
 
-auth_file = parent_cwd.joinpath(".spotify-auth.json")
-if not auth_file.exists():
-    raise Exception(
-        f"Authentication file not found at {auth_file}. Run authentication.py as described in the README."
-    )
+auth_file = get_auth_file()
 
 
 def main():

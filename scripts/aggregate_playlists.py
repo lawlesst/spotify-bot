@@ -5,10 +5,8 @@ Aggregate public radio playlists.
 import argparse
 import logging
 import logging.handlers
-import re
 import sys
 from datetime import date
-from math import log
 from pathlib import Path
 
 from dotenv import dotenv_values
@@ -17,14 +15,14 @@ from harvest_public_radio_playlist import (
     UNDISCOVERED_DAILY_PLAYLIST_ID,
     UNDISCOVERED_WEEKLY_PLAYLIST_ID,
 )
+from spotify.client import Spotify
+from spotify.utils import get_auth_file
 
 config = dotenv_values()
 
+
+
 cwd = Path(__file__).parent
-parent_cwd = cwd.parent
-sys.path.append(str(parent_cwd))
-# Add client to path.
-from spotify.client import Spotify
 
 file_handler = logging.handlers.RotatingFileHandler(
     filename=cwd.joinpath("pr.log"),
@@ -43,11 +41,7 @@ logging.basicConfig(
     handlers=handlers,
 )
 
-auth_file = parent_cwd.joinpath(".spotify-auth.json")
-if not auth_file.exists():
-    raise Exception(
-        f"Authentication file not found at {auth_file}. Run authentication.py as described in the README."
-    )
+auth_file = get_auth_file()
 
 
 def main():

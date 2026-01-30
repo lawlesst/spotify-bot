@@ -5,17 +5,14 @@ Harvest public radio playlists.
 import argparse
 import logging
 import sys
-from pathlib import Path
 
 from dotenv import dotenv_values
 
+from spotify.client import Spotify
+from spotify.utils import get_auth_file
+
 config = dotenv_values()
 
-cwd = Path(__file__).parent
-parent_cwd = cwd.parent
-sys.path.append(str(parent_cwd))
-# Add client to path.
-from spotify.client import Spotify
 
 stdout_handler = logging.StreamHandler(stream=sys.stdout)
 handlers = [stdout_handler]
@@ -26,11 +23,7 @@ logging.basicConfig(
     handlers=handlers,
 )
 
-auth_file = parent_cwd.joinpath(".spotify-auth.json")
-if not auth_file.exists():
-    raise Exception(
-        f"Authentication file not found at {auth_file}. Run authentication.py as described in the README."
-    )
+auth_file = get_auth_file()
 
 
 def main():
@@ -71,7 +64,7 @@ def main():
             pass
         else:
             if api.get_state() is False:
-                print(f"Player is not active. Not adding to queue.")
+                print("Player is not active. Not adding to queue.")
                 return
 
         program_info = program_map.get(slug)
