@@ -7,10 +7,13 @@ from pydantic import BaseModel, Field
 from typing import Optional
 import click
 import random
+from dotenv import dotenv_values
 
 import re
 
 from spotify.client import Spotify
+
+config = dotenv_values()
 
 parent_cwd = Path(__file__).parent.parent
 auth_file = parent_cwd.joinpath(".spotify-auth.json")
@@ -28,7 +31,7 @@ class Track(BaseModel):
     album: Optional[str] = Field(description="The album the track belongs to.")
     year: Optional[int] = Field(description="The release year of the track.")
 
-gemini_api_key = os.getenv("GEMINI_API_KEY")
+gemini_api_key = config.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
 
 client = genai.Client(api_key=gemini_api_key)
 

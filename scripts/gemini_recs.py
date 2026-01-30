@@ -18,6 +18,10 @@ from pydantic import BaseModel, Field
 
 from spotify.client import Spotify
 from spotify.utils import get_auth_file
+from dotenv import dotenv_values
+
+config = dotenv_values()
+
 
 auth_file = get_auth_file()
 data_dir = Path(__file__).parent.joinpath("data")
@@ -238,7 +242,7 @@ def main():
     )
     args = parser.parse_args()
 
-    gemini_api_key = os.getenv("GEMINI_API_KEY")
+    gemini_api_key = config.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
     if not gemini_api_key:
         raise RuntimeError("GEMINI_API_KEY is not set.")
 
